@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Transcription</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Whisper Transcription</title>
+    <!-- Lien vers le fichier CSS -->
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Real-Time Transcription</h1>
-        <p>Record audio and get real-time transcription using Whisper Large-V3.</p>
-        <button id="startRecording">Start Recording</button>
-        <button id="stopRecording" disabled>Stop Recording</button>
-        <textarea id="transcription" readonly placeholder="Transcribed text will appear here..."></textarea>
+        <h1>Transcription en temps réel</h1>
+        <textarea id="transcription" readonly>Aucune transcription encore...</textarea>
+        <br />
+        <button id="startRecording">Commencer l'enregistrement</button>
+        <button id="stopRecording" disabled>Arrêter l'enregistrement</button>
     </div>
-    <script src="index.js"></script>
+    <!-- Référencer index.js comme fichier statique -->
+    <script src="/static/index.js"></script>
 </body>
 </html>
