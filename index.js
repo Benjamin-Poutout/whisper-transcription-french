@@ -1,51 +1,66 @@
+let socket;
 let mediaRecorder;
 let audioChunks = [];
 
-// Function to send audio chunk to backend for real-time transcription
-const sendAudioChunk = async (chunk) => {
-    const formData = new FormData();
-    formData.append("file", chunk, "chunk.wav");
+// Connexion WebSocket
+socket = new WebSocket("ws://localhost:8000/ws");
 
-    try {
-        const response = await fetch("http://127.0.0.1:8000/transcribe", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            document.getElementById("transcription").value = data.transcription;
-        } else {
-            console.error("Error in transcription.");
-        }
-    } catch (error) {
-        console.error("Error sending audio chunk:", error);
-    }
+socket.onopen = () => {
+    console.log("Connected to WebSocket");
 };
 
-document.getElementById("startRecording").addEventListener("click", async () => {
-    audioChunks = [];
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
+socket.onmessage = (event) => {
+    // Afficher la transcription reçue du serveur
+    const transcription = event.data;
+    document.getElementById("transcription").innerText = transcription;
+};
 
-    mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-        // Send each chunk to the backend for transcription
-        sendAudioChunk(event.data);
+socket.onclose = () => {
+    console.log("Disconnected from WebSocket");
+};
+
+// Demander la permission pour accéder au micro et démarrer l'enregistrement
+const startButton = document.getElementById("startRecording");
+const stopButton = document.getElementById("stopRecording");
+
+if (startButton) {
+    startButton.onclick = async function () {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+        startButton.disabled = true;
+        stopButton.disabled = false;
+
+        // Capture audio en chunks et envoi en temps réel
+        mediaRecorder.ondataavailable = (event) => {
+            // Ajouter les morceaux à notre tableau
+            audioChunks.push(event.data);
+
+            // Envoyer chaque chunk d'audio au serveur en temps réel
+            socket.send(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            console.log("Recording stopped.");
+            // Lorsque l'enregistrement s'arrête, vider les morceaux d'audio
+            audioChunks = [];
+        };
+
+        // Démarrer l'enregistrement
+        mediaRecorder.start();
+        console.log("Recording started...");
     };
+} else {
+    console.error("Start button not found.");
+}
 
-    mediaRecorder.onstop = () => {
-        document.getElementById("startRecording").disabled = false;
-        document.getElementById("stopRecording").disabled = true;
+if (stopButton) {
+    stopButton.onclick = () => {
+        mediaRecorder.stop();
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        console.log("Recording stopped.");
     };
-
-    mediaRecorder.start();
-    document.getElementById("startRecording").disabled = true;
-    document.getElementById("stopRecording").disabled = false;
-});
-
-document.getElementById("stopRecording").addEventListener("click", () => {
-    mediaRecorder.stop();
-    document.getElementById("startRecording").disabled = false;
-    document.getElementById("stopRecording").disabled = true;
-});
+} else {
+    console.error("Stop button not found.");
+}
