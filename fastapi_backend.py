@@ -1,7 +1,3 @@
-"""
-fastapi whisper transcriber
-"""
-
 import logging
 import tempfile
 import os
@@ -13,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import soundfile as sf 
 from fastapi.staticfiles import StaticFiles
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -80,7 +77,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             # Traitement et transcription du chunk en temps réel
             partial_transcription = await process_audio_chunk(audio_data)
-            transcription += partial_transcription + " "  # Ajouter la transcription partielle
+            transcription = partial_transcription   # Ajouter la transcription partielle
             
             # Envoi de la transcription partielle au client
             await websocket.send_text(transcription)
@@ -92,6 +89,7 @@ async def websocket_endpoint(websocket: WebSocket):
 # Fonction de conversion WebM en WAV
 async def process_audio_chunk(audio_data: bytes):
     try:
+        logging.debug("Starting process_audio_chunk...")
         # Enregistrer les données audio dans un fichier temporaire .webm
         with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as tmp_file:
             tmp_file.write(audio_data)
@@ -100,6 +98,7 @@ async def process_audio_chunk(audio_data: bytes):
         
         # Convertir .webm en .wav
         wav_path = tmp_file_path.replace('.webm', '.wav')
+        logging.debug(f"Converting {tmp_file_path} to {wav_path}")  # Log avant la conversion
         conversion_result = convert_webm_to_wav(tmp_file_path, wav_path)
         if conversion_result is None:
             raise ValueError("Conversion failed")
@@ -151,3 +150,4 @@ async def transcribe_audio(file_path: str):
     except Exception as e:
         logging.error(f"Error during transcription: {e}")
         return "Error during transcription"
+
